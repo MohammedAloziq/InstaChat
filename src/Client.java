@@ -15,7 +15,7 @@ class Client implements Runnable {
     public void run(){
         try {
             // Replace with yours.
-            String ipAddress = "192.168.0.185";
+            String ipAddress = "127.0.0.1";
             client = new Socket(ipAddress, 9999); // Socket client ..
             out = new PrintWriter(client.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -72,4 +72,12 @@ class Client implements Runnable {
         Client client = new Client();
         client.run();
     }
+
+    // TODO: HANDLE SERVER REFRESH
+    // TODO: CONNECT TO DATABASE
+    // TODO: SAVE USERS TO DATABASE
+    // TODO: SAVE CHATS TO DATABASE
+    // TODO: CREATE A FRONTEND SERVER // SALMAN
+    // TODO: SHOW CHATS IN FRONTEND // SALMAN
+    // TODO: SEND MESSAGES TO BACKEND // SALMAN
 }
