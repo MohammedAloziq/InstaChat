@@ -68,7 +68,6 @@ public class Server implements Runnable {
             this.client = client;
         }
 
-
         @Override
         public void run() {
             try {
@@ -87,7 +86,7 @@ public class Server implements Runnable {
                             String privateMessage = messageSplit[2];
                             sendPrivateMessage(targetNickname, nickName + " (private): " + privateMessage);
                         } else {
-                            out.println("Invalid private message format. Use /msg <nickname> <message>.");
+                            out.println("Invalid private message format. Use /private <nickname> <message>.");
                         }
                     } else if (message.startsWith("/nick ")) {
                         String[] messageSplit = message.split(" ", 2);
