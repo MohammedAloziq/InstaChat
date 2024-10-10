@@ -10,7 +10,7 @@ CREATE TABLE user (
 
 -- desc user;
 
-CREATE TABLE ChatRoom (
+CREATE TABLE Models.ChatRoom (
   chat_room_id INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for the chat room
   name VARCHAR(255) NOT NULL, -- Name of the chat room, cannot be null
   created_by INT NOT NULL, -- ID of the user who created the chat room
@@ -18,10 +18,10 @@ CREATE TABLE ChatRoom (
   CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) -- Foreign key constraint referencing the user table
 );
 
-CREATE TABLE `Message` (
+CREATE TABLE `Models.Message` (
     message_id INT AUTO_INCREMENT PRIMARY KEY,                 -- Primary Key for the message
     sender_user_id INT NOT NULL,                               -- Foreign Key referencing user_id in the user table
-    content TEXT NOT NULL,                                     -- Message content
+    content TEXT NOT NULL,                                     -- Models.Message content
     recipient_user_id INT,                                     -- Foreign Key referencing user_id (nullable if chat room exists)
     recipient_chat_room_id INT,                                -- Foreign Key referencing chat_room_id (nullable if recipient_user_id exists)
     recipient_type ENUM('private', 'group') NOT NULL,          -- Specify whether recipient is a user (private) or a group
@@ -34,18 +34,18 @@ CREATE TABLE `Message` (
 --     CONSTRAINT fk_recipient_chat_room FOREIGN KEY (recipient_chat_room_id) REFERENCES chat_room(chat_room_id)
 );
 
-ALTER TABLE `Message`
+ALTER TABLE `Models.Message`
 ADD CONSTRAINT fk_sender_user
 FOREIGN KEY (sender_user_id) REFERENCES user(user_id)
 ON DELETE CASCADE;
 
-ALTER TABLE `Message`
+ALTER TABLE `Models.Message`
 ADD CONSTRAINT fk_recipient_user
 FOREIGN KEY (recipient_user_id) REFERENCES `user`(user_id);
 
-ALTER TABLE `Message`
+ALTER TABLE `Models.Message`
 ADD CONSTRAINT fk_recipient_chat_room
-FOREIGN KEY (recipient_chat_room_id) REFERENCES `ChatRoom`(chat_room_id)
+FOREIGN KEY (recipient_chat_room_id) REFERENCES `Models.ChatRoom`(chat_room_id)
 ON DELETE SET NULL;
 
 desc user;
@@ -53,7 +53,7 @@ desc chatroom;
 
 drop table Message;
 
-ALTER TABLE `Message`
+ALTER TABLE `Models.Message`
 ADD CONSTRAINT `fk_chat_room`
 FOREIGN KEY (`recipient_chat_room_id`) REFERENCES `chat_room`(`chat_room_id`)
 ON DELETE CASCADE; -- Adjust behavior as per your need
