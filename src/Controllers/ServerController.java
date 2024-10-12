@@ -1,6 +1,5 @@
 package Controllers;
 
-import Models.User;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -65,7 +64,7 @@ public class ServerController implements Runnable {
             }
         }
         if (!found) {
-            sender.sendMessage("User with nickname '" + targetNickname + "' not found.");
+            sender.sendMessage("User with nickname '%s' not found.".formatted(targetNickname));
         }
     }
 

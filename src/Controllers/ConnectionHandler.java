@@ -71,6 +71,7 @@ public class ConnectionHandler implements Runnable {
             if (user.getPassword().equals(password)) {
                 out.printf("Login successful. Welcome, %s%n", user.getEmail());
                 System.out.println("Login successfully");
+                user.setConnectionStatus("online");
             } else {
                 out.println("Incorrect password.");
                 processCommands();
@@ -108,6 +109,7 @@ public class ConnectionHandler implements Runnable {
             handleChangeNickname(command);
         } else if (command.startsWith("/quit")) {
             serverController.broadcast("%s has left the chat!".formatted(user.getUsername()));
+            user.setConnectionStatus("offline");
             shutDown();
         } else if (command.startsWith("/show")) {
             handleShowActiveUsers();
@@ -137,7 +139,7 @@ public class ConnectionHandler implements Runnable {
             serverController.broadcast("%s renamed themselves to %s".formatted(user.getUsername(), newNickname));
             System.out.printf("%s renamed themselves to %s%n", user.getUsername(), newNickname);
             user.setUsername(newNickname);
-            out.printf("Successfully changed nickname to %s%n", user.getUsername());
+            out.printf("Successfully changed username to %s%n", user.getUsername());
         } else {
             out.println("No nickname provided.");
         }
@@ -146,7 +148,7 @@ public class ConnectionHandler implements Runnable {
     private void handleShowActiveUsers() {
         StringBuilder activeUsers = new StringBuilder("Active users: ");
         for (ConnectionHandler ch : serverController.getConnections()) {
-            if (ch.getNickName() != null) {
+            if (ch.user.getUsername() != null) {
                 activeUsers.append(ch.getNickName()).append(", ");
             }
         }
