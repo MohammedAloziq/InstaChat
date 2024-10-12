@@ -4,14 +4,17 @@ public class User {
     private int user_id;
     private String username;
     private String email;
-    private String password = "password";
-    private Boolean connectionStatus = false;
+    private String password;
+    private String connectionStatus = "offline";
 
-    public User(int id, String username, String email) {
+
+    public User(int id, String email, String password) {
         this.user_id = id;
-        this.username = username;
         this.email = email;
+        this.password = password;
     }
+
+    public User() {}
 
     public void setId(int id) {
         this.user_id = id;
@@ -21,7 +24,7 @@ public class User {
         return user_id;
     }
 
-    public void SetUsername(String username) {
+    public void setUsername(String username) {
         this.username = username;
     }
 
@@ -45,13 +48,14 @@ public class User {
         return this.password;
     }
 
-    public void toggleConnectionStatus(boolean status) {
-        this.connectionStatus = !status;
+    public void setConnectionStatus(String status) {
+        this.connectionStatus = status;
     }
 
-    public boolean getConncetionStatus() {
+    public String getConncetionStatus() {
         return this.connectionStatus;
     }
+
 
     @Override
     public String toString() {

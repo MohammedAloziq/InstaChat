@@ -1,6 +1,8 @@
 package Controllers;
 
 import Models.User;
+import Repository.UserRepository;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -9,12 +11,12 @@ public class ConnectionHandler implements Runnable {
     private final ServerController serverController;
     private BufferedReader in;
     private PrintWriter out;
-    private String nickName;
     private User user;
 
     public ConnectionHandler(Socket client, ServerController serverController) {
         this.client = client;
         this.serverController = serverController;
+        this.user = new User();
     }
 
     @Override
@@ -33,38 +35,70 @@ public class ConnectionHandler implements Runnable {
     }
 
     private void processCommands() throws IOException {
-        out.println("To sign in '/in'");
+        out.println("To sign in '/in' or '/up' to sign up");
         String command = in.readLine();
 
         if (command.startsWith("/in ")) {
             handleSignIn(command);
-        } else {
+        } else if (command.startsWith("/up")) {
             handleSignUp();
+        } else {
+            out.println("Invalid command. Please sign in or sign up to proceed.");
+            processCommands();
         }
 
         out.println("Your nickname: ");
-        this.nickName = in.readLine();
-        System.out.println(nickName + " connected!");
-        serverController.broadcast(nickName + " joined the chat!");
+        user.setUsername(in.readLine());
+        System.out.printf("%s connected!%n", user.getUsername());
+        serverController.broadcast("%s joined the chat!".formatted(user.getUsername()));
 
         while ((command = in.readLine()) != null) {
             handleChatCommands(command);
         }
     }
 
-    private void handleSignIn(String command) {
+    private void handleSignIn(String command) throws IOException {
         String[] messageSplit = command.split(" ", 3);
         if (messageSplit.length == 3) {
-            String username = messageSplit[1];
+            String email = messageSplit[1];
             String password = messageSplit[2];
-            // TODO: Implement sign-in
+
+            // Sign-in logic
+            this.user = UserRepository.getUserByEmail(email);
+
+            System.out.println(user.getPassword());
+
+            if (user.getPassword().equals(password)) {
+                out.printf("Login successful. Welcome, %s%n", user.getEmail());
+                System.out.println("Login successfully");
+            } else {
+                out.println("Incorrect password.");
+                processCommands();
+            }
         } else {
-            out.println("Invalid command format. Use '/in <username> <password>'.");
+            out.println("Invalid command format. Use '/in <email> <password>'.");
+            processCommands();
         }
     }
 
-    private void handleSignUp() {
-        // TODO: Implement sign-up
+    private void handleSignUp() throws IOException {
+        out.println("Enter email: ");
+        String email = in.readLine();
+
+        if (UserRepository.getUserByEmail(email) != null) {
+            out.println("Email already taken. Please try another email.");
+            handleSignUp();  // Recursive call for another attempt
+        } else {
+            user.setEmail(email);
+
+            out.println("Enter password: ");
+            String password = in.readLine();
+            user.setPassword(password);  // You should hash the password here
+
+            // Save the user in the database
+            UserRepository.addUser(user);
+            out.println("Sign-up successful! Please sign in.");
+        }
     }
 
     private void handleChatCommands(String command) {
@@ -73,12 +107,15 @@ public class ConnectionHandler implements Runnable {
         } else if (command.startsWith("/nick ")) {
             handleChangeNickname(command);
         } else if (command.startsWith("/quit")) {
-            serverController.broadcast(nickName + " has left the chat!");
+            serverController.broadcast("%s has left the chat!".formatted(user.getUsername()));
             shutDown();
         } else if (command.startsWith("/show")) {
             handleShowActiveUsers();
+        } else if (command.startsWith("/help" ) || command.startsWith("/h") ) {
+            // TODO: HANDLE HELP COMMAND
+            out.println("help");
         } else {
-            serverController.broadcast(nickName + ": " + command);
+            serverController.broadcast("%s: %s".formatted(user.getUsername(), command));
         }
     }
 
@@ -87,7 +124,7 @@ public class ConnectionHandler implements Runnable {
         if (messageSplit.length == 3) {
             String targetNickname = messageSplit[1];
             String privateMessage = messageSplit[2];
-            serverController.handlePrivateMessage(targetNickname, nickName + " (private): " + privateMessage, this);
+            serverController.handlePrivateMessage(targetNickname, "%s (private): %s".formatted(user.getUsername(), privateMessage), this);
         } else {
             out.println("Invalid command format. Use /private <nickname> <message>.");
         }
@@ -97,10 +134,10 @@ public class ConnectionHandler implements Runnable {
         String[] messageSplit = command.split(" ", 2);
         if (messageSplit.length == 2) {
             String newNickname = messageSplit[1];
-            serverController.broadcast(nickName + " renamed themselves to " + newNickname);
-            System.out.println(nickName + " renamed themselves to " + newNickname);
-            nickName = newNickname;
-            out.println("Successfully changed nickname to " + nickName);
+            serverController.broadcast("%s renamed themselves to %s".formatted(user.getUsername(), newNickname));
+            System.out.printf("%s renamed themselves to %s%n", user.getUsername(), newNickname);
+            user.setUsername(newNickname);
+            out.printf("Successfully changed nickname to %s%n", user.getUsername());
         } else {
             out.println("No nickname provided.");
         }
@@ -113,7 +150,7 @@ public class ConnectionHandler implements Runnable {
                 activeUsers.append(ch.getNickName()).append(", ");
             }
         }
-        out.println(activeUsers.length() > 0 ? activeUsers.substring(0, activeUsers.length() - 2) : "No active users.");
+        out.println(!activeUsers.isEmpty() ? activeUsers.substring(0, activeUsers.length() - 2) : "No active users.");
     }
 
     public void sendMessage(String message) {
@@ -121,7 +158,7 @@ public class ConnectionHandler implements Runnable {
     }
 
     public String getNickName() {
-        return nickName;
+        return user.getUsername();
     }
 
     public void shutDown() {

@@ -31,7 +31,7 @@ public class UserRepository {
     }
 
     // Method to find a user by ID
-    public User getUserById(int id) {
+    public static User getUserById(int id) {
         String query = "SELECT * FROM user WHERE user_id = ?";
         User user = null;
 
@@ -53,16 +53,41 @@ public class UserRepository {
         return user;
     }
 
-    // Method to add a new user
-    public void addUser(User user) {
-        String query = "INSERT INTO user (username, email, password) VALUES (?, ?, ?)";
+    public static User getUserByEmail(String enteredEmail) {
+        String query = "SELECT * FROM user WHERE email = ?";
+        User user = null;
 
         try (Connection conn = MySQLConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, user.getUsername());
-            pstmt.setString(2, user.getEmail());
-            pstmt.setString(3, "hashed_password"); // Replace with actual password hashing
+            pstmt.setString(1, enteredEmail);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("user_id");
+                String email = rs.getString("email");
+                String password = rs.getString("password");
+
+                user = new User(id, email, password);
+//                System.out.printf("%s %s%n", user.getEmail(), user.getPassword());
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return user;
+    }
+
+
+    // Method to add a new user
+    public static void addUser(User user) {
+        String query = "INSERT INTO user (email, password) VALUES (?, ?)";
+
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, user.getEmail());
+            pstmt.setString(2, user.getPassword()); // Replace with actual password hashing
             pstmt.executeUpdate();
 
         } catch (SQLException e) {
