@@ -1,5 +1,6 @@
 package Controllers;
 
+import Models.Message;
 import Models.User;
 import Repository.UserRepository;
 
@@ -11,7 +12,7 @@ public class ConnectionHandler implements Runnable {
     private final ServerController serverController;
     private BufferedReader in;
     private PrintWriter out;
-    private User user;
+    User user;
 
     public ConnectionHandler(Socket client, ServerController serverController) {
         this.client = client;
@@ -37,23 +38,19 @@ public class ConnectionHandler implements Runnable {
     private void processCommands() throws IOException {
         out.println("To sign in '/in' or '/up' to sign up");
         String command = in.readLine();
+        String[] messageSplit = command.split(" ", 3);
 
         if (command.startsWith("/in ")) {
-            handleSignIn(command);
+            if (messageSplit.length != 3) {
+                out.println("Invalid command. use /in <email> <password>");
+            } else {
+                handleSignIn(command);
+            }
         } else if (command.startsWith("/up")) {
             handleSignUp();
         } else {
             out.println("Invalid command. Please sign in or sign up to proceed.");
             processCommands();
-        }
-
-        out.println("Your nickname: ");
-        user.setUsername(in.readLine());
-        System.out.printf("%s connected!%n", user.getUsername());
-        serverController.broadcast("%s joined the chat!".formatted(user.getUsername()));
-
-        while ((command = in.readLine()) != null) {
-            handleChatCommands(command);
         }
     }
 
@@ -63,15 +60,22 @@ public class ConnectionHandler implements Runnable {
             String email = messageSplit[1];
             String password = messageSplit[2];
 
-            // Sign-in logic
             this.user = UserRepository.getUserByEmail(email);
-
-            System.out.println(user.getPassword());
-
-            if (user.getPassword().equals(password)) {
-                out.printf("Login successful. Welcome, %s%n", user.getEmail());
-                System.out.println("Login successfully");
+            if (this.user == null) {
+                out.println("This user is currently connected.");
+                processCommands();
+            } else if (user.getPassword().equals(password)) {
+                out.printf("Login successful. Welcome, %s%n", user.getUsername());
                 user.setConnectionStatus("online");
+                user.setSignedIn(true);
+                UserRepository.updateUser(user);
+                System.out.printf("%s connected!%n", user.getUsername());
+                serverController.broadcast("%s joined the chat!".formatted(user.getUsername()));
+                if (user.isSignedIn()) {
+                    while ((command = in.readLine()) != null) {
+                        handleChatCommands(command);
+                    }
+                }
             } else {
                 out.println("Incorrect password.");
                 processCommands();
@@ -90,7 +94,7 @@ public class ConnectionHandler implements Runnable {
             out.println("Email already taken. Please try another email.");
             handleSignUp();  // Recursive call for another attempt
         } else {
-            user.setEmail(email);
+            this.user.setEmail(email);
 
             out.println("Enter password: ");
             String password = in.readLine();
@@ -99,6 +103,7 @@ public class ConnectionHandler implements Runnable {
             // Save the user in the database
             UserRepository.addUser(user);
             out.println("Sign-up successful! Please sign in.");
+            processCommands();
         }
     }
 
@@ -109,24 +114,29 @@ public class ConnectionHandler implements Runnable {
             handleChangeNickname(command);
         } else if (command.startsWith("/quit")) {
             serverController.broadcast("%s has left the chat!".formatted(user.getUsername()));
-            user.setConnectionStatus("offline");
             shutDown();
         } else if (command.startsWith("/show")) {
             handleShowActiveUsers();
-        } else if (command.startsWith("/help" ) || command.startsWith("/h") ) {
+        } else if (command.startsWith("/help") || command.startsWith("/h")) {
             // TODO: HANDLE HELP COMMAND
             out.println("help");
+        } else if (command.startsWith("/adminShutdown")) {
+            serverController.shutDown();
         } else {
             serverController.broadcast("%s: %s".formatted(user.getUsername(), command));
+            Message message = new Message();
+            message.setContent(command);
+            int senderId = user.getId();
+            message.setSenderUserId(senderId);
         }
     }
 
     private void preparePrivateMessage(String command) {
         String[] messageSplit = command.split(" ", 3);
         if (messageSplit.length == 3) {
-            String targetNickname = messageSplit[1];
+            String recepientUsername = messageSplit[1];
             String privateMessage = messageSplit[2];
-            serverController.handlePrivateMessage(targetNickname, "%s (private): %s".formatted(user.getUsername(), privateMessage), this);
+            serverController.handlePrivateMessage(recepientUsername, ":%s (private): %s".formatted(user.getUsername(), privateMessage), this);
         } else {
             out.println("Invalid command format. Use /private <nickname> <message>.");
         }
@@ -136,7 +146,8 @@ public class ConnectionHandler implements Runnable {
         String[] messageSplit = command.split(" ", 2);
         if (messageSplit.length == 2) {
             String newNickname = messageSplit[1];
-            serverController.broadcast("%s renamed themselves to %s".formatted(user.getUsername(), newNickname));
+            String renameMessage = "%s renamed themselves to %s".formatted(user.getUsername(), newNickname);
+            serverController.broadcast(renameMessage);
             System.out.printf("%s renamed themselves to %s%n", user.getUsername(), newNickname);
             user.setUsername(newNickname);
             out.printf("Successfully changed username to %s%n", user.getUsername());
@@ -165,13 +176,15 @@ public class ConnectionHandler implements Runnable {
 
     public void shutDown() {
         try {
+            user.setConnectionStatus("offline");
+            UserRepository.updateUser(user);
             in.close();
             out.close();
             if (!client.isClosed()) {
                 client.close();
             }
         } catch (IOException e) {
-            // Handle exception
+            // IGNORE
         }
     }
 }

@@ -1,5 +1,8 @@
 package Controllers;
 
+import Models.User;
+import Repository.UserRepository;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -35,7 +38,7 @@ public class ServerController implements Runnable {
 
     public void broadcast(String message) {
         for (ConnectionHandler ch : connections) {
-            if (ch != null) {
+            if (ch != null && ch.user.isSignedIn()) {
                 ch.sendMessage(message);
             }
         }
@@ -43,28 +46,45 @@ public class ServerController implements Runnable {
 
     public void shutDown() {
         try {
-            done = true;
-            pool.shutdown();
             for (ConnectionHandler ch : connections) {
                 broadcast("Server has shut down.");
+//                ch.user.setConnectionStatus("offline");
+//                UserRepository.updateUser(ch.user);
                 ch.shutDown();
             }
+            done = true;
+            pool.shutdown();
         } catch (Exception e) {
             // Handle exception
         }
     }
 
-    public void handlePrivateMessage(String targetNickname, String message, ConnectionHandler sender) {
+    public User getRecepientUser(String recepientUsername, ConnectionHandler sender) {
         boolean found = false;
+        User user = null;
+
         for (ConnectionHandler ch : connections) {
-            if (ch.getNickName() != null && ch.getNickName().equals(targetNickname)) {
-                ch.sendMessage(message);
+            if (ch.user.getUsername() != null && ch.user.getUsername().equals(recepientUsername)) {
                 found = true;
+                user = ch.user;
                 break;
             }
         }
         if (!found) {
-            sender.sendMessage("User with nickname '%s' not found.".formatted(targetNickname));
+            sender.sendMessage("User with username '%s' not found.".formatted(recepientUsername));
+        }
+        return user;
+    }
+
+
+    public void handlePrivateMessage(String recepientUsername, String message, ConnectionHandler sender) {
+        User receiver = getRecepientUser(recepientUsername, sender);
+        for (ConnectionHandler ch : connections) {
+            if (ch.user.getUsername() != null && ch.user.getEmail().equals(receiver.getEmail())) {
+
+                ch.sendMessage(message);
+                break;
+            }
         }
     }
 

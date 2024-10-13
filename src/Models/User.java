@@ -6,12 +6,20 @@ public class User {
     private String email;
     private String password;
     private String connectionStatus = "offline";
+    private boolean signedIn = false;
 
-
-    public User(int id, String email, String password) {
+    public User(int id, String email, String password, String username) {
         this.user_id = id;
+        this.username = username;
         this.email = email;
         this.password = password;
+
+    }public User(int id, String email, String password, String username, String connectionStatus) {
+        this.user_id = id;
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.connectionStatus = connectionStatus;
     }
 
     public User() {}
@@ -52,13 +60,20 @@ public class User {
         this.connectionStatus = status;
     }
 
-    public String getConncetionStatus() {
+    public String getConnectionStatus() {
         return this.connectionStatus;
     }
 
+    public boolean isSignedIn() {
+        return signedIn;
+    }
+
+    public void setSignedIn(boolean signedIn) {
+        this.signedIn = signedIn;
+    }
 
     @Override
     public String toString() {
-        return "Models.User{" + "user_id=" + user_id + ", username='" + username + '\'' + ", email='" + email + '\'' + ", password='" + password + '\'' + ", connectionStatus=" + connectionStatus + '}';
+        return "Models.User{user_id=%d, username='%s', email='%s', password='%s', connectionStatus=%s}".formatted(user_id, username, email, password, connectionStatus);
     }
 }

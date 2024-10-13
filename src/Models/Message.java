@@ -17,6 +17,8 @@ public class Message {
         this.content = content;
     }
 
+    public Message() {}
+
     public int getMessageId() {
         return messageId;
     }
