@@ -26,6 +26,12 @@ class Client implements Runnable {
 
             String inMessage;
             while((inMessage = in.readLine()) != null) {
+                if (inMessage.equals("Server has shut down. All clients will be disconnected.")) {
+                    System.out.println("Server is shutting down, closing connection...");
+                    shutDown();  // Call shutdown to close client resources
+                    System.out.println("done");
+                    break;
+                }
                 System.out.println(inMessage);
             }
         } catch (IOException e) {

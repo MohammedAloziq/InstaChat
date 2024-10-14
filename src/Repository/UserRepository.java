@@ -1,6 +1,9 @@
 package Repository;
 
+import Controllers.ConnectionHandler;
+import Controllers.ServerController;
 import Models.User;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +59,6 @@ public class UserRepository {
     }
 
 
-
     public static User getUserByEmail(String enteredEmail) {
         String query = "SELECT * FROM user WHERE email = ?";
         User user = null;
@@ -74,8 +76,9 @@ public class UserRepository {
                 String password = rs.getString("password");
                 String connectionStatus = rs.getString("status");
 
-                if ("offline".equalsIgnoreCase(connectionStatus)) {
-                    user = new User(id, email, password, username);
+                user = new User(id, email, password, username);
+                if ("online".equalsIgnoreCase(connectionStatus)) {
+                    user.setConnectionStatus("online");
                 }
             }
 

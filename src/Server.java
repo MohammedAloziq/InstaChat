@@ -5,9 +5,7 @@ public class Server {
 
     public static void main(String[] args) {
         ArrayList<Controllers.ConnectionHandler> connections = new ArrayList<>();
-        ServerController serverController = new ServerController(connections);
+        ServerController serverController = new ServerController();
         serverController.run();
     }
 }
-
-
